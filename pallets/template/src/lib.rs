@@ -36,14 +36,6 @@ pub mod pallet {
 		RewardAmountSet { value: u64 },
 	}
 
-	// // Pallet internal functions
-	// impl<T: Config> Pallet<T> {
-	// 	pub fn set_reward(new_reward: u64) -> Result<u64, DispatchError> {
-	// 		RewardAmount::<T>::put(new_reward);
-	// 		Ok(new_reward)
-	// 	}
-	// }
-
 	// Pallet callable functions
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
