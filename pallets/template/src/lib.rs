@@ -10,10 +10,7 @@ pub use crate::{default_weights::WeightInfo, pallet::*};
 pub mod pallet {
 	use super::WeightInfo;
 	use frame_support::traits::FindAuthor;
-	use frame_support::{
-		pallet_prelude::*,
-		traits::{Currency, OnUnbalanced},
-	};
+	use frame_support::{pallet_prelude::*, traits::Currency};
 	use frame_system::pallet_prelude::*;
 
 	pub type AccountIdOf<T> = <T as frame_system::Config>::AccountId;
@@ -30,7 +27,6 @@ pub mod pallet {
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		type Currency: Currency<Self::AccountId>;
 		type FindAuthor: FindAuthor<Self::AccountId>;
-		type Beneficiary: OnUnbalanced<NegativeImbalanceOf<Self>>;
 		type WeightInfo: WeightInfo;
 	}
 
@@ -66,21 +62,28 @@ pub mod pallet {
 			Ok(())
 		}
 
-		// #[pallet::weight(0)]
-		// pub fn save_author(origin: OriginFor<T>) -> DispatchResult {
-		// 	let block_digest = <frame_system::Pallet<T>>::digest();
-		// 	let digests = block_digest.logs.iter().filter_map(|d| d.as_pre_runtime());
-		// 	let author = T::FindAuthor::find_author(digests);
-		// 	Author::<T>::put(author);
-		// 	Ok(())
-		// }
+		#[pallet::weight(0)]
+		pub fn save_author(origin: OriginFor<T>) -> DispatchResult {
+			let _ = ensure_signed(origin)?;
+			let block_digest = <frame_system::Pallet<T>>::digest();
+			let digests = block_digest.logs.iter().filter_map(|d| d.as_pre_runtime());
+			let author = T::FindAuthor::find_author(digests);
+			Author::<T>::put(author);
+			Ok(())
+		}
 	}
 
 	#[pallet::hooks]
 	impl<T: Config> Hooks<BlockNumberFor<T>> for Pallet<T> {
 		fn on_initialize(_: T::BlockNumber) -> Weight {
 			let reward = T::Currency::issue(RewardAmount::<T>::get());
-			T::Beneficiary::on_unbalanced(reward);
+			// T::Beneficiary::on_unbalanced(reward);
+
+			let block_digest = <frame_system::Pallet<T>>::digest();
+			let digests = block_digest.logs.iter().filter_map(|d| d.as_pre_runtime());
+			let author = T::FindAuthor::find_author(digests);
+
+			T::Currency::resolve_creating(&author.unwrap(), reward);
 			<T as Config>::WeightInfo::on_initialize_mint_to_treasury()
 		}
 	}
