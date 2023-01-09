@@ -35,9 +35,6 @@ pub mod pallet {
 	#[pallet::storage]
 	pub(super) type RewardAmount<T: Config> = StorageValue<_, BalanceOf<T>, ValueQuery>;
 
-	#[pallet::storage]
-	pub(super) type Author<T: Config> = StorageValue<_, Option<T::AccountId>, ValueQuery>;
-
 	#[pallet::error]
 	pub enum Error<T> {
 		/// setting storage value failed
@@ -49,6 +46,11 @@ pub mod pallet {
 	pub enum Event<T: Config> {
 		/// New reward amount set
 		RewardAmountSet { value: BalanceOf<T> },
+		/// Mining reward given to author
+		MiningRewardForAuthor {
+			value: BalanceOf<T>,
+			account: Option<<T as frame_system::Config>::AccountId>,
+		},
 	}
 
 	// Pallet callable functions
@@ -59,16 +61,6 @@ pub mod pallet {
 			let _ = ensure_signed(origin)?;
 			RewardAmount::<T>::put(new_reward);
 			Self::deposit_event(Event::RewardAmountSet { value: new_reward });
-			Ok(())
-		}
-
-		#[pallet::weight(0)]
-		pub fn save_author(origin: OriginFor<T>) -> DispatchResult {
-			let _ = ensure_signed(origin)?;
-			let block_digest = <frame_system::Pallet<T>>::digest();
-			let digests = block_digest.logs.iter().filter_map(|d| d.as_pre_runtime());
-			let author = T::FindAuthor::find_author(digests);
-			Author::<T>::put(author);
 			Ok(())
 		}
 	}
@@ -82,8 +74,14 @@ pub mod pallet {
 			let block_digest = <frame_system::Pallet<T>>::digest();
 			let digests = block_digest.logs.iter().filter_map(|d| d.as_pre_runtime());
 			let author = T::FindAuthor::find_author(digests);
+			let author_copy = author.clone();
 
 			T::Currency::resolve_creating(&author.unwrap(), reward);
+			Self::deposit_event(Event::MiningRewardForAuthor {
+				value: RewardAmount::<T>::get(),
+				account: author_copy,
+			});
+
 			<T as Config>::WeightInfo::on_initialize_mint_to_treasury()
 		}
 	}
