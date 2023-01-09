@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "node",
+    "pallets/author-rewards",
     "pallets/template",
     "runtime",
 ]

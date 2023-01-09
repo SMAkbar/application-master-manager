@@ -332,6 +332,7 @@ construct_runtime!(
 		Sudo: pallet_sudo,
 		// Include the custom logic from the pallet-template in the runtime.
 		TemplateModule: pallet_template,
+		AuthorRewards: author_rewards,
 	}
 );
 
@@ -628,4 +629,10 @@ mod tests {
 			whitelist.contains("26aa394eea5630e07c48ae0c9558cef780d41e5e16056765bc8461851072c9d7")
 		);
 	}
+}
+
+pub use author_rewards;
+impl author_rewards::Config for Runtime {
+	type RuntimeEvent = RuntimeEvent;
+	type Currency = Balances;
 }
