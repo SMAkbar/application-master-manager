@@ -311,6 +311,7 @@ impl pallet_session::Config for Runtime {
 impl pallet_template::Config for Runtime {
 	type RuntimeEvent = RuntimeEvent;
 	type Currency = Balances;
+	type FindAuthor = pallet_session::FindAccountFromAuthorIndex<Self, Aura>;
 }
 
 // Create the runtime by composing the FRAME pallets that were previously configured.

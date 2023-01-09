@@ -6,6 +6,7 @@ pub use pallet::*;
 pub mod pallet {
 	use frame_support::pallet_prelude::*;
 	use frame_support::traits::Currency;
+	use frame_support::traits::FindAuthor;
 	use frame_system::pallet_prelude::*;
 
 	#[pallet::pallet]
@@ -16,12 +17,16 @@ pub mod pallet {
 	pub trait Config: frame_system::Config {
 		type RuntimeEvent: From<Event<Self>> + IsType<<Self as frame_system::Config>::RuntimeEvent>;
 		type Currency: Currency<Self::AccountId>;
+		type FindAuthor: FindAuthor<Self::AccountId>;
 	}
 
 	// #[derive(Clone, Encode, Decode, PartialEq, Copy, RuntimeDebug, TypeInfo, MaxEncodedLen)]
 
 	#[pallet::storage]
 	pub(super) type RewardAmount<T: Config> = StorageValue<_, u64, ValueQuery>;
+
+	#[pallet::storage]
+	pub(super) type Author<T: Config> = StorageValue<_, Option<T::AccountId>, ValueQuery>;
 
 	#[pallet::error]
 	pub enum Error<T> {
@@ -44,6 +49,15 @@ pub mod pallet {
 			let _ = ensure_signed(origin)?;
 			RewardAmount::<T>::put(new_reward);
 			Self::deposit_event(Event::RewardAmountSet { value: new_reward });
+			Ok(())
+		}
+
+		#[pallet::weight(0)]
+		pub fn save_author(origin: OriginFor<T>) -> DispatchResult {
+			let block_digest = <frame_system::Pallet<T>>::digest();
+			let digests = block_digest.logs.iter().filter_map(|d| d.as_pre_runtime());
+			let author = T::FindAuthor::find_author(digests);
+			Author::<T>::put(author);
 			Ok(())
 		}
 	}
